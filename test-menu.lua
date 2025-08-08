@@ -12,8 +12,8 @@ screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Основной фрейм
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 180)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -90)
+mainFrame.Size = UDim2.new(0, 280, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -100)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
@@ -87,15 +87,15 @@ contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainFrame
 
 -- Вкладки
-local tabs = {"ESP", "Shop"}
+local tabs = {"ESP", "Shop", "Dupe"}
 local currentTab = "ESP"
 local tabButtons = {}
 local tabContents = {}
 
 for i, tabName in ipairs(tabs) do
     local tabButton = Instance.new("TextButton")
-    tabButton.Size = UDim2.new(0.5, 0, 1, 0)
-    tabButton.Position = UDim2.new((i-1)/2, 0, 0, 0)
+    tabButton.Size = UDim2.new(0.33, 0, 1, 0)
+    tabButton.Position = UDim2.new((i-1)/3, 0, 0, 0)
     tabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     tabButton.Text = tabName
     tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -174,7 +174,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
     if isMinimized then
         minimizeButton.Text = "+"
-        local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 25)})
+        local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 280, 0, 25)})
         tween:Play()
         contentFrame.Visible = false
         tabContainer.Visible = false
@@ -199,7 +199,7 @@ local espConnection = nil
 local function createBillboard(parent, text, color)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_Label"
-    billboard.Size = UDim2.new(0, 80, 0, 40)
+    billboard.Size = UDim2.new(0, 100, 0, 50)
     billboard.StudsOffset = Vector3.new(0, 2, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = parent
@@ -222,24 +222,23 @@ local function updateESP()
             obj.ESP_Label:Destroy()
         end
     end
-    -- Поиск объектов (яйца/ящики)
+    -- Поиск объектов
     local targetFolder = workspace:FindFirstChild("Eggs") or workspace:FindFirstChild("Crates") or workspace
-    for _, obj in pairs(targetFolder:GetChildren()) do
-        -- Проверка возможных имен объектов (настройте под игру)
-        if obj.Name:match("Egg") or obj.Name:match("Crate") then
+    for _, obj in pairs(targetFolder:GetDescendants()) do
+        -- Проверка любых объектов, содержащих "Egg" или "Crate" в имени
+        if obj.Name:lower():match("egg") or obj.Name:lower():match("crate") then
             -- Проверка возможных атрибутов
-            local data = obj:FindFirstChild("PetData") or obj:FindFirstChild("CrateData") or obj:FindFirstChild("Data")
+            local data = obj:FindFirstChild("PetData") or obj:FindFirstChild("CrateData") or obj:FindFirstChild("Data") or obj:FindFirstChild("Pet")
             local weight = obj:FindFirstChild("Weight") or obj:FindFirstChild("Mass") or obj:FindFirstChild("Value")
             local rarity = obj:FindFirstChild("Rarity") and obj.Rarity.Value or "Common"
             if data then
-                local petName = (data:IsA("StringValue") or data:IsA("ObjectValue")) and (data.Value or "Unknown") or "Unknown"
+                local petName = (data:IsA("StringValue") or data:IsA("ObjectValue")) and (data.Value or tostring(data)) or "Unknown"
                 local weightValue = weight and tostring(weight.Value) or "N/A"
                 local color = rarity == "Legendary" and Color3.fromRGB(255, 215, 0) or
                               rarity == "Epic" and Color3.fromRGB(128, 0, 128) or
                               rarity == "Rare" and Color3.fromRGB(0, 128, 255) or
                               Color3.fromRGB(200, 200, 200)
-                createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue .. " kg", color)
-                -- Отладка
+                createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue .. " кг", color)
                 print("ESP:", obj.Name, "Pet:", petName, "Rarity:", rarity, "Weight:", weightValue)
             else
                 warn("Данные не найдены для объекта:", obj.Name)
@@ -366,7 +365,7 @@ autoBuyButton.MouseButton1Click:Connect(function()
                 local success, err = pcall(function()
                     -- Настройте путь и аргументы под игру
                     local args = {
-                        [1] = "Shop", -- Замените на правильный магазин, например "SeedShop"
+                        [1] = "SeedShop", -- Замените на правильный магазин, например "SeedShop"
                         [2] = selectedSeed,
                         [3] = 1
                     }
@@ -391,13 +390,107 @@ autoBuyButton.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Вкладка Dupe
+local petList = {"Dog", "Cat", "Dragon", "Unicorn", "Phoenix", "Legendary Pet"} -- Настройте под реальных петов
+local selectedPet = nil
+
+local petDropdown = Instance.new("TextButton")
+petDropdown.Size = UDim2.new(0.9, 0, 0, 30)
+petDropdown.Position = UDim2.new(0.05, 0, 0.1, 0)
+petDropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+petDropdown.Text = "Пет: Нет"
+petDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+petDropdown.Font = Enum.Font.Gotham
+petDropdown.TextSize = 12
+petDropdown.Parent = tabContents["Dupe"]
+
+local petDropdownCorner = Instance.new("UICorner")
+petDropdownCorner.CornerRadius = UDim.new(0, 4)
+petDropdownCorner.Parent = petDropdown
+
+local petDropdownFrame = Instance.new("Frame")
+petDropdownFrame.Size = UDim2.new(0.9, 0, 0, #petList * 30)
+petDropdownFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+petDropdownFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+petDropdownFrame.Visible = false
+petDropdownFrame.Parent = tabContents["Dupe"]
+
+local petDropdownList = Instance.new("UIListLayout")
+petDropdownList.Parent = petDropdownFrame
+
+for _, pet in ipairs(petList) do
+    local petButton = Instance.new("TextButton")
+    petButton.Size = UDim2.new(1, 0, 0, 30)
+    petButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    petButton.Text = pet
+    petButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    petButton.Font = Enum.Font.Gotham
+    petButton.TextSize = 12
+    petButton.Parent = petDropdownFrame
+
+    local petCorner = Instance.new("UICorner")
+    petCorner.CornerRadius = UDim.new(0, 4)
+    petCorner.Parent = petButton
+
+    petButton.MouseButton1Click:Connect(function()
+        selectedPet = pet
+        petDropdown.Text = "Пет: " .. pet
+        petDropdownFrame.Visible = false
+        print("Выбран пет:", pet)
+    end)
+end
+
+petDropdown.MouseButton1Click:Connect(function()
+    petDropdownFrame.Visible = not petDropdownFrame.Visible
+end)
+
+local dupeButton = Instance.new("TextButton")
+dupeButton.Size = UDim2.new(0.9, 0, 0, 30)
+dupeButton.Position = UDim2.new(0.05, 0, 0.3, 0)
+dupeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+dupeButton.Text = "Выдать пета"
+dupeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+dupeButton.Font = Enum.Font.Gotham
+dupeButton.TextSize = 12
+dupeButton.Parent = tabContents["Dupe"]
+
+local dupeCorner = Instance.new("UICorner")
+dupeCorner.CornerRadius = UDim.new(0, 4)
+dupeCorner.Parent = dupeButton
+
+dupeButton.MouseButton1Click:Connect(function()
+    if selectedPet then
+        local success, err = pcall(function()
+            -- Настройте путь и аргументы под игру
+            local args = {
+                [1] = selectedPet,
+                [2] = 1 -- Количество петов
+            }
+            local gameEvents = ReplicatedStorage:FindFirstChild("GameEvents") or ReplicatedStorage
+            local grantPet = gameEvents:FindFirstChild("GrantPet") or gameEvents:FindFirstChild("AddPet") or gameEvents:FindFirstChild("RewardPet")
+            if grantPet then
+                grantPet:FireServer(unpack(args))
+                print("Попытка выдать пета:", selectedPet)
+            else
+                error("GrantPet/AddPet/RewardPet не найден в ReplicatedStorage")
+            end
+        end)
+        if not success then
+            warn("Ошибка выдачи пета: " .. tostring(err))
+        end
+    else
+        warn("Выберите пета для выдачи")
+    end
+end)
+
 -- Анимация появления
 mainFrame.Size = UDim2.new(0, 0, 0, 0)
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 180)})
+local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 280, 0, 200)})
 tween:Play()
 
 -- Отладка структуры игры
+print("=== Отладка структуры игры ===")
 print("ReplicatedStorage:")
 for _, child in pairs(ReplicatedStorage:GetChildren()) do
     print(child.Name, child.ClassName)
