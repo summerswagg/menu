@@ -226,25 +226,34 @@ local function updateESP()
     local targetFolder = workspace:FindFirstChild("Eggs") or workspace:FindFirstChild("Crates") or workspace
     for _, obj in pairs(targetFolder:GetDescendants()) do
         if obj.Name:lower():match("egg") or obj.Name:lower():match("crate") then
-            -- Проверка всех дочерних объектов для поиска данных
-            local petName = "Unknown"
-            local rarity = "Common"
+            local petName = "Неизвестно"
+            local rarity = "Обычный"
             local weightValue = "N/A"
+            local hasData = false
             for _, child in pairs(obj:GetDescendants()) do
-                if child.Name:lower():match("pet") or child.Name:lower():match("data") then
-                    petName = child:IsA("StringValue") and child.Value or tostring(child)
-                elseif child.Name:lower():match("rarity") then
-                    rarity = child:IsA("StringValue") and child.Value or tostring(child)
-                elseif child.Name:lower():match("weight") or child.Name:lower():match("mass") or child.Name:lower():match("value") then
-                    weightValue = child:IsA("NumberValue") and tostring(child.Value) or tostring(child)
+                if not hasData then
+                    if child.Name:lower() == "petname" or child.Name:lower() == "pet" or child.Name:lower() == "nametag" then
+                        petName = child:IsA("StringValue") and child.Value or tostring(child)
+                        hasData = true
+                    end
+                    if child.Name:lower() == "rarity" or child.Name:lower() == "rare" then
+                        rarity = child:IsA("StringValue") and child.Value or tostring(child)
+                        hasData = true
+                    end
+                    if child.Name:lower() == "weight" or child.Name:lower() == "mass" or child.Name:lower() == "value" then
+                        weightValue = child:IsA("NumberValue") and tostring(child.Value) .. " кг" or tostring(child)
+                        hasData = true
+                    end
                 end
             end
-            local color = rarity == "Legendary" and Color3.fromRGB(255, 215, 0) or
-                          rarity == "Epic" and Color3.fromRGB(128, 0, 128) or
-                          rarity == "Rare" and Color3.fromRGB(0, 128, 255) or
-                          Color3.fromRGB(200, 200, 200)
-            createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue .. " кг", color)
-            print("ESP: Объект:", obj.Name, "Пет:", petName, "Редкость:", rarity, "Вес:", weightValue)
+            if hasData then
+                local color = rarity == "Legendary" and Color3.fromRGB(255, 215, 0) or
+                              rarity == "Epic" and Color3.fromRGB(128, 0, 128) or
+                              rarity == "Rare" and Color3.fromRGB(0, 128, 255) or
+                              Color3.fromRGB(200, 200, 200)
+                createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue, color)
+                print("ESP: Объект:", obj.Name, "Пет:", petName, "Редкость:", rarity, "Вес:", weightValue)
+            end
         end
     end
 end
@@ -270,7 +279,7 @@ espButton.MouseButton1Click:Connect(function()
         print("ESP включен, сканирование объектов...")
         updateESP()
         espConnection = game:GetService("RunService").Stepped:Connect(function()
-            if tick() % 5 < 0.1 then
+            if tick() % 7 < 0.1 then
                 updateESP()
             end
         end)
@@ -514,24 +523,3 @@ mainFrame.Size = UDim2.new(0, 0, 0, 0)
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 180)})
 tween:Play()
-
--- Отладка структуры игры
-print("=== ОТЛАДКА СТРУКТУРЫ ИГРЫ ===")
-print("ReplicatedStorage:")
-for _, child in pairs(ReplicatedStorage:GetChildren()) do
-    print(child.Name, child.ClassName)
-    if child.ClassName == "Folder" then
-        for _, subChild in pairs(child:GetChildren()) do
-            print("  ", subChild.Name, subChild.ClassName)
-        end
-    end
-end
-print("Workspace:")
-for _, child in pairs(workspace:GetChildren()) do
-    print(child.Name, child.ClassName)
-    if child.Name:lower():match("egg") or child.Name:lower():match("crate") then
-        for _, subChild in pairs(child:GetDescendants()) do
-            print("  ", subChild.Name, subChild.ClassName, subChild:IsA("ValueBase") and subChild.Value or "")
-        end
-    end
-end
