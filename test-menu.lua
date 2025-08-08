@@ -12,8 +12,8 @@ screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Основной фрейм
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 280, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -100)
+mainFrame.Size = UDim2.new(0, 250, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -90)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
@@ -174,7 +174,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
     if isMinimized then
         minimizeButton.Text = "+"
-        local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 280, 0, 25)})
+        local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 25)})
         tween:Play()
         contentFrame.Visible = false
         tabContainer.Visible = false
@@ -225,24 +225,26 @@ local function updateESP()
     -- Поиск объектов
     local targetFolder = workspace:FindFirstChild("Eggs") or workspace:FindFirstChild("Crates") or workspace
     for _, obj in pairs(targetFolder:GetDescendants()) do
-        -- Проверка любых объектов, содержащих "Egg" или "Crate" в имени
         if obj.Name:lower():match("egg") or obj.Name:lower():match("crate") then
-            -- Проверка возможных атрибутов
-            local data = obj:FindFirstChild("PetData") or obj:FindFirstChild("CrateData") or obj:FindFirstChild("Data") or obj:FindFirstChild("Pet")
-            local weight = obj:FindFirstChild("Weight") or obj:FindFirstChild("Mass") or obj:FindFirstChild("Value")
-            local rarity = obj:FindFirstChild("Rarity") and obj.Rarity.Value or "Common"
-            if data then
-                local petName = (data:IsA("StringValue") or data:IsA("ObjectValue")) and (data.Value or tostring(data)) or "Unknown"
-                local weightValue = weight and tostring(weight.Value) or "N/A"
-                local color = rarity == "Legendary" and Color3.fromRGB(255, 215, 0) or
-                              rarity == "Epic" and Color3.fromRGB(128, 0, 128) or
-                              rarity == "Rare" and Color3.fromRGB(0, 128, 255) or
-                              Color3.fromRGB(200, 200, 200)
-                createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue .. " кг", color)
-                print("ESP:", obj.Name, "Pet:", petName, "Rarity:", rarity, "Weight:", weightValue)
-            else
-                warn("Данные не найдены для объекта:", obj.Name)
+            -- Проверка всех дочерних объектов для поиска данных
+            local petName = "Unknown"
+            local rarity = "Common"
+            local weightValue = "N/A"
+            for _, child in pairs(obj:GetDescendants()) do
+                if child.Name:lower():match("pet") or child.Name:lower():match("data") then
+                    petName = child:IsA("StringValue") and child.Value or tostring(child)
+                elseif child.Name:lower():match("rarity") then
+                    rarity = child:IsA("StringValue") and child.Value or tostring(child)
+                elseif child.Name:lower():match("weight") or child.Name:lower():match("mass") or child.Name:lower():match("value") then
+                    weightValue = child:IsA("NumberValue") and tostring(child.Value) or tostring(child)
+                end
             end
+            local color = rarity == "Legendary" and Color3.fromRGB(255, 215, 0) or
+                          rarity == "Epic" and Color3.fromRGB(128, 0, 128) or
+                          rarity == "Rare" and Color3.fromRGB(0, 128, 255) or
+                          Color3.fromRGB(200, 200, 200)
+            createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue .. " кг", color)
+            print("ESP: Объект:", obj.Name, "Пет:", petName, "Редкость:", rarity, "Вес:", weightValue)
         end
     end
 end
@@ -265,10 +267,10 @@ espButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     espButton.Text = "ESP: " .. (espEnabled and "Вкл" or "Выкл")
     if espEnabled then
-        print("ESP включен, проверка объектов...")
+        print("ESP включен, сканирование объектов...")
         updateESP()
         espConnection = game:GetService("RunService").Stepped:Connect(function()
-            if tick() % 3 < 0.1 then
+            if tick() % 5 < 0.1 then
                 updateESP()
             end
         end)
@@ -363,19 +365,31 @@ autoBuyButton.MouseButton1Click:Connect(function()
         spawn(function()
             while autoBuyEnabled and selectedSeed do
                 local success, err = pcall(function()
-                    -- Настройте путь и аргументы под игру
                     local args = {
-                        [1] = "SeedShop", -- Замените на правильный магазин, например "SeedShop"
+                        [1] = "Shop", -- Замените на правильный магазин
                         [2] = selectedSeed,
                         [3] = 1
                     }
                     local gameEvents = ReplicatedStorage:FindFirstChild("GameEvents") or ReplicatedStorage
-                    local buyItem = gameEvents:FindFirstChild("BuyItem") or gameEvents:FindFirstChild("Purchase")
+                    local buyItem = nil
+                    for _, event in pairs(gameEvents:GetChildren()) do
+                        if event.ClassName == "RemoteEvent" and (event.Name:lower():match("buy") or event.Name:lower():match("purchase")) then
+                            buyItem = event
+                            break
+                        end
+                    end
                     if buyItem then
                         buyItem:FireServer(unpack(args))
-                        print("Попытка покупки:", selectedSeed)
+                        print("Попытка покупки:", selectedSeed, "через", buyItem.Name)
                     else
-                        error("BuyItem/Purchase не найден в ReplicatedStorage")
+                        -- Альтернативный формат аргументов
+                        local altArgs = {shop = "Shop", item = selectedSeed, quantity = 1}
+                        if buyItem then
+                            buyItem:FireServer(altArgs)
+                            print("Попытка покупки (альтернативный формат):", selectedSeed, "через", buyItem.Name)
+                        else
+                            error("RemoteEvent для покупки не найден")
+                        end
                     end
                 end)
                 if not success then
@@ -461,18 +475,30 @@ dupeCorner.Parent = dupeButton
 dupeButton.MouseButton1Click:Connect(function()
     if selectedPet then
         local success, err = pcall(function()
-            -- Настройте путь и аргументы под игру
             local args = {
                 [1] = selectedPet,
-                [2] = 1 -- Количество петов
+                [2] = 1
             }
             local gameEvents = ReplicatedStorage:FindFirstChild("GameEvents") or ReplicatedStorage
-            local grantPet = gameEvents:FindFirstChild("GrantPet") or gameEvents:FindFirstChild("AddPet") or gameEvents:FindFirstChild("RewardPet")
+            local grantPet = nil
+            for _, event in pairs(gameEvents:GetChildren()) do
+                if event.ClassName == "RemoteEvent" and (event.Name:lower():match("pet") or event.Name:lower():match("grant") or event.Name:lower():match("add") or event.Name:lower():match("reward")) then
+                    grantPet = event
+                    break
+                end
+            end
             if grantPet then
                 grantPet:FireServer(unpack(args))
-                print("Попытка выдать пета:", selectedPet)
+                print("Попытка выдать пета:", selectedPet, "через", grantPet.Name)
             else
-                error("GrantPet/AddPet/RewardPet не найден в ReplicatedStorage")
+                -- Альтернативный формат аргументов
+                local altArgs = {pet = selectedPet, amount = 1}
+                if grantPet then
+                    grantPet:FireServer(altArgs)
+                    print("Попытка выдать пета (альтернативный формат):", selectedPet, "через", grantPet.Name)
+                else
+                    error("RemoteEvent для выдачи пета не найден")
+                end
             end
         end)
         if not success then
@@ -486,16 +512,26 @@ end)
 -- Анимация появления
 mainFrame.Size = UDim2.new(0, 0, 0, 0)
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 280, 0, 200)})
+local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 180)})
 tween:Play()
 
 -- Отладка структуры игры
-print("=== Отладка структуры игры ===")
+print("=== ОТЛАДКА СТРУКТУРЫ ИГРЫ ===")
 print("ReplicatedStorage:")
 for _, child in pairs(ReplicatedStorage:GetChildren()) do
     print(child.Name, child.ClassName)
+    if child.ClassName == "Folder" then
+        for _, subChild in pairs(child:GetChildren()) do
+            print("  ", subChild.Name, subChild.ClassName)
+        end
+    end
 end
 print("Workspace:")
 for _, child in pairs(workspace:GetChildren()) do
     print(child.Name, child.ClassName)
+    if child.Name:lower():match("egg") or child.Name:lower():match("crate") then
+        for _, subChild in pairs(child:GetDescendants()) do
+            print("  ", subChild.Name, subChild.ClassName, subChild:IsA("ValueBase") and subChild.Value or "")
+        end
+    end
 end
