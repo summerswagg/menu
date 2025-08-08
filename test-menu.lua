@@ -12,9 +12,9 @@ screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Основной фрейм
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.Size = UDim2.new(0, 250, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -90)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
@@ -26,7 +26,7 @@ corner.Parent = mainFrame
 -- Заголовок
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 25)
-titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
@@ -34,7 +34,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0.7, 0, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "Grow A Garden"
+titleText.Text = "Grow A Garden Menu"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 12
@@ -45,7 +45,7 @@ titleText.Parent = titleBar
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -25, 0, 0)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeButton.Font = Enum.Font.Gotham
@@ -75,7 +75,7 @@ minimizeCorner.Parent = minimizeButton
 local tabContainer = Instance.new("Frame")
 tabContainer.Size = UDim2.new(1, 0, 0, 25)
 tabContainer.Position = UDim2.new(0, 0, 0, 25)
-tabContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+tabContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 tabContainer.BorderSizePixel = 0
 tabContainer.Parent = mainFrame
 
@@ -87,16 +87,16 @@ contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainFrame
 
 -- Вкладки
-local tabs = {"ESP", "Shop", "Auto"}
+local tabs = {"ESP", "Shop"}
 local currentTab = "ESP"
 local tabButtons = {}
 local tabContents = {}
 
 for i, tabName in ipairs(tabs) do
     local tabButton = Instance.new("TextButton")
-    tabButton.Size = UDim2.new(0.33, 0, 1, 0)
-    tabButton.Position = UDim2.new((i-1)/3, 0, 0, 0)
-    tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    tabButton.Size = UDim2.new(0.5, 0, 1, 0)
+    tabButton.Position = UDim2.new((i-1)/2, 0, 0, 0)
+    tabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     tabButton.Text = tabName
     tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     tabButton.Font = Enum.Font.Gotham
@@ -125,7 +125,7 @@ local function switchTab(tabName)
     tabContents[tabName].Visible = true
     currentTab = tabName
     for name, button in pairs(tabButtons) do
-        button.BackgroundColor3 = name == tabName and Color3.fromRGB(65, 65, 65) or Color3.fromRGB(45, 45, 45)
+        button.BackgroundColor3 = name == tabName and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(40, 40, 40)
     end
 end
 
@@ -174,7 +174,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
     if isMinimized then
         minimizeButton.Text = "+"
-        local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 300, 0, 25)})
+        local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 25)})
         tween:Play()
         contentFrame.Visible = false
         tabContainer.Visible = false
@@ -222,21 +222,27 @@ local function updateESP()
             obj.ESP_Label:Destroy()
         end
     end
-    -- Поиск яиц/ящиков
+    -- Поиск объектов (яйца/ящики)
     local targetFolder = workspace:FindFirstChild("Eggs") or workspace:FindFirstChild("Crates") or workspace
     for _, obj in pairs(targetFolder:GetChildren()) do
-        if obj.Name == "Egg" or obj.Name == "Crate" then
+        -- Проверка возможных имен объектов (настройте под игру)
+        if obj.Name:match("Egg") or obj.Name:match("Crate") then
+            -- Проверка возможных атрибутов
             local data = obj:FindFirstChild("PetData") or obj:FindFirstChild("CrateData") or obj:FindFirstChild("Data")
-            local weight = obj:FindFirstChild("Weight") or obj:FindFirstChild("Mass")
+            local weight = obj:FindFirstChild("Weight") or obj:FindFirstChild("Mass") or obj:FindFirstChild("Value")
             local rarity = obj:FindFirstChild("Rarity") and obj.Rarity.Value or "Common"
             if data then
-                local petName = data.Value or "Unknown"
+                local petName = (data:IsA("StringValue") or data:IsA("ObjectValue")) and (data.Value or "Unknown") or "Unknown"
                 local weightValue = weight and tostring(weight.Value) or "N/A"
                 local color = rarity == "Legendary" and Color3.fromRGB(255, 215, 0) or
                               rarity == "Epic" and Color3.fromRGB(128, 0, 128) or
                               rarity == "Rare" and Color3.fromRGB(0, 128, 255) or
                               Color3.fromRGB(200, 200, 200)
                 createBillboard(obj, petName .. "\n" .. rarity .. "\n" .. weightValue .. " kg", color)
+                -- Отладка
+                print("ESP:", obj.Name, "Pet:", petName, "Rarity:", rarity, "Weight:", weightValue)
+            else
+                warn("Данные не найдены для объекта:", obj.Name)
             end
         end
     end
@@ -245,7 +251,7 @@ end
 local espButton = Instance.new("TextButton")
 espButton.Size = UDim2.new(0.9, 0, 0, 30)
 espButton.Position = UDim2.new(0.05, 0, 0.1, 0)
-espButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+espButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 espButton.Text = "ESP: Выкл"
 espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 espButton.Font = Enum.Font.Gotham
@@ -260,9 +266,10 @@ espButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     espButton.Text = "ESP: " .. (espEnabled and "Вкл" or "Выкл")
     if espEnabled then
+        print("ESP включен, проверка объектов...")
         updateESP()
         espConnection = game:GetService("RunService").Stepped:Connect(function()
-            if tick() % 2 < 0.1 then
+            if tick() % 3 < 0.1 then
                 updateESP()
             end
         end)
@@ -276,6 +283,7 @@ espButton.MouseButton1Click:Connect(function()
                 obj.ESP_Label:Destroy()
             end
         end
+        print("ESP выключен")
     end
 end)
 
@@ -286,7 +294,7 @@ local selectedSeed = nil
 local seedDropdown = Instance.new("TextButton")
 seedDropdown.Size = UDim2.new(0.9, 0, 0, 30)
 seedDropdown.Position = UDim2.new(0.05, 0, 0.1, 0)
-seedDropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+seedDropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 seedDropdown.Text = "Семя: Нет"
 seedDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
 seedDropdown.Font = Enum.Font.Gotham
@@ -300,7 +308,7 @@ dropdownCorner.Parent = seedDropdown
 local dropdownFrame = Instance.new("Frame")
 dropdownFrame.Size = UDim2.new(0.9, 0, 0, #seedList * 30)
 dropdownFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-dropdownFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 dropdownFrame.Visible = false
 dropdownFrame.Parent = tabContents["Shop"]
 
@@ -310,7 +318,7 @@ dropdownList.Parent = dropdownFrame
 for _, seed in ipairs(seedList) do
     local seedButton = Instance.new("TextButton")
     seedButton.Size = UDim2.new(1, 0, 0, 30)
-    seedButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    seedButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     seedButton.Text = seed
     seedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     seedButton.Font = Enum.Font.Gotham
@@ -325,6 +333,7 @@ for _, seed in ipairs(seedList) do
         selectedSeed = seed
         seedDropdown.Text = "Семя: " .. seed
         dropdownFrame.Visible = false
+        print("Выбрано семя:", seed)
     end)
 end
 
@@ -335,7 +344,7 @@ end)
 local autoBuyButton = Instance.new("TextButton")
 autoBuyButton.Size = UDim2.new(0.9, 0, 0, 30)
 autoBuyButton.Position = UDim2.new(0.05, 0, 0.3, 0)
-autoBuyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+autoBuyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 autoBuyButton.Text = "Автопокупка: Выкл"
 autoBuyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 autoBuyButton.Font = Enum.Font.Gotham
@@ -351,6 +360,7 @@ autoBuyButton.MouseButton1Click:Connect(function()
     autoBuyEnabled = not autoBuyEnabled
     autoBuyButton.Text = "Автопокупка: " .. (autoBuyEnabled and "Вкл" or "Выкл")
     if autoBuyEnabled and selectedSeed then
+        print("Автопокупка включена для:", selectedSeed)
         spawn(function()
             while autoBuyEnabled and selectedSeed do
                 local success, err = pcall(function()
@@ -364,8 +374,9 @@ autoBuyButton.MouseButton1Click:Connect(function()
                     local buyItem = gameEvents:FindFirstChild("BuyItem") or gameEvents:FindFirstChild("Purchase")
                     if buyItem then
                         buyItem:FireServer(unpack(args))
+                        print("Попытка покупки:", selectedSeed)
                     else
-                        error("BuyItem не найден")
+                        error("BuyItem/Purchase не найден в ReplicatedStorage")
                     end
                 end)
                 if not success then
@@ -380,56 +391,18 @@ autoBuyButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Вкладка Auto
-local autoFarmButton = Instance.new("TextButton")
-autoFarmButton.Size = UDim2.new(0.9, 0, 0, 30)
-autoFarmButton.Position = UDim2.new(0.05, 0, 0.1, 0)
-autoFarmButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-autoFarmButton.Text = "Автофарм: Выкл"
-autoFarmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoFarmButton.Font = Enum.Font.Gotham
-autoFarmButton.TextSize = 12
-autoFarmButton.Parent = tabContents["Auto"]
-
-local farmCorner = Instance.new("UICorner")
-farmCorner.CornerRadius = UDim.new(0, 4)
-farmCorner.Parent = autoFarmButton
-
-local autoFarmEnabled = false
-autoFarmButton.MouseButton1Click:Connect(function()
-    autoFarmEnabled = not autoFarmEnabled
-    autoFarmButton.Text = "Автофарм: " .. (autoFarmEnabled and "Вкл" or "Выкл")
-    if autoFarmEnabled then
-        spawn(function()
-            while autoFarmEnabled do
-                local success, err = pcall(function()
-                    local plantFolder = workspace:FindFirstChild("Plants") or workspace
-                    for _, plant in pairs(plantFolder:GetChildren()) do
-                        if plant.Name == "Plant" and plant:FindFirstChild("Growth") then
-                            local gameEvents = ReplicatedStorage:FindFirstChild("GameEvents") or ReplicatedStorage
-                            local harvest = gameEvents:FindFirstChild("HarvestPlant") or gameEvents:FindFirstChild("Harvest")
-                            if harvest then
-                                harvest:FireServer(plant)
-                            else
-                                error("HarvestPlant не найден")
-                            end
-                        end
-                    end
-                end)
-                if not success then
-                    warn("Ошибка автофарма: " .. tostring(err))
-                    autoFarmEnabled = false
-                    autoFarmButton.Text = "Автофарм: Выкл"
-                    break
-                end
-                wait(1)
-            end
-        end)
-    end
-end)
-
 -- Анимация появления
 mainFrame.Size = UDim2.new(0, 0, 0, 0)
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 300, 0, 200)})
+local tween = TweenService:Create(mainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 180)})
 tween:Play()
+
+-- Отладка структуры игры
+print("ReplicatedStorage:")
+for _, child in pairs(ReplicatedStorage:GetChildren()) do
+    print(child.Name, child.ClassName)
+end
+print("Workspace:")
+for _, child in pairs(workspace:GetChildren()) do
+    print(child.Name, child.ClassName)
+end
